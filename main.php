@@ -35,7 +35,7 @@ function start($telegram,$update)
 		$img = curl_file_create('logo.png','image/png');
 		$contentp = array('chat_id' => $chat_id, 'photo' => $img);
 		$telegram->sendPhoto($contentp);
-		$reply = "Benvenuto. Per ricercare una struttura ricettiva della Regione Toscana, censita dal Dipartimento regionale del turismo dello sport e dello spettacolo, digita il nome del Comune oppure clicca sulla graffetta (📎) e poi 'posizione' . Puoi anche ricercare per parola chiave nel titolo anteponendo il carattere ?. Verrà interrogato il DataBase openData utilizzabile con licenza CC-BY presente su http://dati.toscana.it/dataset/rt-strutric. In qualsiasi momento scrivendo /start ti ripeterò questo messaggio di benvenuto.\nQuesto bot è stato realizzato da @piersoft e potete migliorare il codice sorgente con licenza MIT che trovate su https://github.com/piersoft/dovedormireinsiciliabot.\nLa propria posizione viene ricercata grazie al geocoder di openStreetMap con Lic. odbl.\n";
+		$reply = "Benvenuto. Per ricercare una struttura ricettiva della Regione Toscana, censita dal Dipartimento regionale del turismo dello sport e dello spettacolo, digita il nome del Comune oppure clicca sulla graffetta (📎) e poi 'posizione' . Puoi anche ricercare per parola chiave nel titolo anteponendo il carattere ?. Verrà interrogato il DataBase openData utilizzabile con licenza CC-BY presente su http://dati.toscana.it/dataset/rt-strutric. In qualsiasi momento scrivendo /start ti ripeterò questo messaggio di benvenuto.\nQuesto bot è stato realizzato da @piersoft e potete migliorare il codice sorgente con licenza MIT che trovate su https://github.com/piersoft/dovedormireinsiciliabot.\nLa propria posizione viene ricercata grazie al geocoder di openStreetMap con Lic. odbl.\nImmagine derivata da Wikipedia Lic CC-BY-SA";
 		$content = array('chat_id' => $chat_id, 'text' => $reply,'disable_web_page_preview'=>true);
 		$telegram->sendMessage($content);
 		$log=$today. ",new chat started," .$chat_id. "\n";
@@ -114,30 +114,46 @@ $ciclo=0;
 foreach ($parsed_json->{'features'} as $i => $value) {
 
 	if ($string==0){
-		$filter=$parsed_json->{'features'}[$i]->{'attributes'}->{'GeogAreaName'};
+		$filter=$parsed_json->{'features'}[$i]->{'properties'}->{'nome_comune'};
+		if (strtoupper($filter)==strtoupper($text)){
+						$ciclo++;
 
+						$homepage = "Nome\Name: <b>".$parsed_json->{'features'}[$i]->{'properties'}->{'denominazione_struttura'}."</b>\n";
+						if ($string!=0) $homepage .= "Località\Location: <b>".$parsed_json->{'features'}[$i]->{'properties'}->{'nome_comune'}."</b>\n";
+						$homepage .= "Tipologia\Typology: <b>".utf8_decode($parsed_json->{'features'}[$i]->{'properties'}->{'categoria'})."</b>\n";
+						if (strip_tags($parsed_json->{'features'}[$i]->{'properties'}->{'nome_comune'}) !=null)	$homepage .= "Località\Location: <b>".$parsed_json->{'features'}[$i]->{'properties'}->{'nome_comune'}."</b>\n";
+						$homepage .= "Clicca per dettagli\Click for details: /".$i."\n";
+						$homepage .="____________";
+						$chunks = str_split($homepage, self::MAX_LENGTH);
+						foreach($chunks as $chunk) {
+						$content = array('chat_id' => $chat_id, 'text' => $chunk,'disable_web_page_preview'=>true,'parse_mode'=>"HTML");
+						$telegram->sendMessage($content);
+
+						}
+						}
 	}else{
-		$filter=$parsed_json->{'features'}[$i]->{'attributes'}->{'AccomDesc'};
+		$filter=$parsed_json->{'features'}[$i]->{'properties'}->{'denominazione_struttura'};
+		if(strpos(strtoupper($filter),strtoupper($text)) !== false){
+						$ciclo++;
 
+						$homepage = "Nome\Name: <b>".$parsed_json->{'features'}[$i]->{'properties'}->{'denominazione_struttura'}."</b>\n";
+						if ($string!=0) $homepage .= "Località\Location: <b>".$parsed_json->{'features'}[$i]->{'properties'}->{'nome_comune'}."</b>\n";
+						$homepage .= "Tipologia\Typology: <b>".utf8_decode($parsed_json->{'features'}[$i]->{'properties'}->{'categoria'})."</b>\n";
+						if (strip_tags($parsed_json->{'features'}[$i]->{'properties'}->{'nome_comune'}) !=null)	$homepage .= "Località\Location: <b>".$parsed_json->{'features'}[$i]->{'properties'}->{'nome_comune'}."</b>\n";
+						$homepage .= "Clicca per dettagli\Click for details: /".$i."\n";
+						$homepage .="____________";
+						$chunks = str_split($homepage, self::MAX_LENGTH);
+						foreach($chunks as $chunk) {
+						$content = array('chat_id' => $chat_id, 'text' => $chunk,'disable_web_page_preview'=>true,'parse_mode'=>"HTML");
+						$telegram->sendMessage($content);
+
+						}
+						}
 	}
 
 
 
-if (strpos(strtoupper($filter),strtoupper($text)) !== false ){
-				$ciclo++;
 
-				$homepage = "Nome: <b>".$parsed_json->{'features'}[$i]->{'attributes'}->{'AccomDesc'}."</b>\n";
-				if ($string!=0) $homepage .= "Località: <b>".$parsed_json->{'features'}[$i]->{'attributes'}->{'GeogAreaName'}."</b> (".$parsed_json->{'features'}[$i]->{'attributes'}->{'Provincia'}.")\n";
-				$homepage .= "Tipologia: <b>".$parsed_json->{'features'}[$i]->{'attributes'}->{'Tipology'}."</b>\n";
-				$homepage .= "Clicca per dettagli: /".$parsed_json->{'features'}[$i]->{'attributes'}->{'ESRI_OID'}."\n";
-				$homepage .="____________";
-				$chunks = str_split($homepage, self::MAX_LENGTH);
-				foreach($chunks as $chunk) {
-				$content = array('chat_id' => $chat_id, 'text' => $chunk,'disable_web_page_preview'=>true,'parse_mode'=>"HTML");
-				$telegram->sendMessage($content);
-
-				}
-				}
 				if ($ciclo>=20 && $all==0){
 					$location="Troppe strutture per questa ricerca, ti ho mostrato le prime 20.\nSe proprio vuoi averle tutte <b>(potrebbero essere centinaia ATTENZIONE!!)</b>, allora digita la località anteponendo il carattere !.\nEsempio !cecina";
 					$content = array('chat_id' => $chat_id, 'text' => $location,'disable_web_page_preview'=>true,'parse_mode'=>"HTML");
@@ -174,18 +190,18 @@ $ciclo=0;
 
 foreach ($parsed_json->{'features'} as $i => $value) {
 
-	$filter=$parsed_json->{'features'}[$i]->{'attributes'}->{'ESRI_OID'};
+	$filter=$parsed_json->{'features'}[$i]->{'properties'}->{'ESRI_OID'};
 
 if ($filter==$text ){
 	$ciclo++;
-	$homepage = "Nome: <b>".$parsed_json->{'features'}[$i]->{'attributes'}->{'AccomDesc'}."</b>\n";
-	$homepage .= "Tipologia: <b>".$parsed_json->{'features'}[$i]->{'attributes'}->{'Tipology'}."</b>\n";
-		if ($parsed_json->{'features'}[$i]->{'attributes'}->{'Classification'} !=null) $homepage .= "Classificazione (stelle): ".$parsed_json->{'features'}[$i]->{'attributes'}->{'Classification'}."\n";
-		$homepage .= "Località: ".$parsed_json->{'features'}[$i]->{'attributes'}->{'GeogAreaName'}." (".$parsed_json->{'features'}[$i]->{'attributes'}->{'Provincia'}.")\n";
-		if ($parsed_json->{'features'}[$i]->{'attributes'}->{'Website'} !=null) $homepage .= "Website: ".$parsed_json->{'features'}[$i]->{'attributes'}->{'Website'}."\n";
-		if ($parsed_json->{'features'}[$i]->{'attributes'}->{'Tel'} !=null) $homepage .= "Tel: ".$parsed_json->{'features'}[$i]->{'attributes'}->{'Tel'}."\n";
-		if ($parsed_json->{'features'}[$i]->{'attributes'}->{'E_Mail'} !=null) $homepage .= "E_Mail: ".$parsed_json->{'features'}[$i]->{'attributes'}->{'E_Mail'}."\n";
-		//$homepage .= "ID: /".$parsed_json->{'features'}[$i]->{'attributes'}->{'ESRI_OID'}."\n";
+	$homepage = "Nome: <b>".$parsed_json->{'features'}[$i]->{'properties'}->{'AccomDesc'}."</b>\n";
+	$homepage .= "Tipologia: <b>".$parsed_json->{'features'}[$i]->{'properties'}->{'Tipology'}."</b>\n";
+		if ($parsed_json->{'features'}[$i]->{'properties'}->{'Classification'} !=null) $homepage .= "Classificazione (stelle): ".$parsed_json->{'features'}[$i]->{'properties'}->{'Classification'}."\n";
+		$homepage .= "Località: ".$parsed_json->{'features'}[$i]->{'properties'}->{'GeogAreaName'}." (".$parsed_json->{'features'}[$i]->{'properties'}->{'Provincia'}.")\n";
+		if ($parsed_json->{'features'}[$i]->{'properties'}->{'Website'} !=null) $homepage .= "Website: ".$parsed_json->{'features'}[$i]->{'properties'}->{'Website'}."\n";
+		if ($parsed_json->{'features'}[$i]->{'properties'}->{'Tel'} !=null) $homepage .= "Tel: ".$parsed_json->{'features'}[$i]->{'properties'}->{'Tel'}."\n";
+		if ($parsed_json->{'features'}[$i]->{'properties'}->{'E_Mail'} !=null) $homepage .= "E_Mail: ".$parsed_json->{'features'}[$i]->{'properties'}->{'E_Mail'}."\n";
+		//$homepage .= "ID: /".$parsed_json->{'features'}[$i]->{'properties'}->{'ESRI_OID'}."\n";
 
 				if($parsed_json->{'features'}[$i]->{'geometry'}->{'x'} !=NULL){
 			//	$homepage .="Mappa:\n";
@@ -255,7 +271,7 @@ function location_manager($telegram,$user_id,$chat_id,$location)
 				}else 	$comune .=$parsed_json->{'address'}->{'city'};
 
 				if ($parsed_json->{'address'}->{'village'}) $comune .=$parsed_json->{'address'}->{'village'};
-				$location="Sto cercando le strutture ricettive a \"".ucfirst($comune)."\" ";
+				$location="Sto cercando le strutture ricettive vicine a \"".ucfirst($comune)."\" ";
 				// tramite le coordinate che hai inviato: ".$lat.",".$lon;
 				$content = array('chat_id' => $chat_id, 'text' => $location,'disable_web_page_preview'=>true);
 				$telegram->sendMessage($content);
@@ -273,7 +289,7 @@ $csv=[];
 			$ciclo=0;
 //if ($count >40) $count=40;
 foreach ($parsed_json->{'features'} as $i => $value) {
-	$filter=$parsed_json->{'features'}[$i]->{'attributes'}->{'GeogAreaName'};
+	$filter=$parsed_json->{'features'}[$i]->{'properties'}->{'GeogAreaName'};
 
 
 if (strpos(strtoupper($filter),strtoupper($comune)) !== false ){
@@ -299,15 +315,15 @@ $ciclo++;
 		$csv[$i][100]= $data;
 		$csv[$i][101]= array("AccomDesc" => "value");
 
-		$csv[$i][101]= $parsed_json->{'features'}[$i]->{'attributes'}->{'AccomDesc'};
+		$csv[$i][101]= $parsed_json->{'features'}[$i]->{'properties'}->{'AccomDesc'};
 
 		$csv[$i][102]= array("Tipology" => "value");
 
-		$csv[$i][102]= $parsed_json->{'features'}[$i]->{'attributes'}->{'Tipology'};
+		$csv[$i][102]= $parsed_json->{'features'}[$i]->{'properties'}->{'Tipology'};
 
 		$csv[$i][103]= array("ESRI_OID" => "value");
 
-		$csv[$i][103]= $parsed_json->{'features'}[$i]->{'attributes'}->{'ESRI_OID'};
+		$csv[$i][103]= $parsed_json->{'features'}[$i]->{'properties'}->{'ESRI_OID'};
 
 		$csv[$i][104]= array("lon" => "value");
 
